@@ -1,6 +1,7 @@
 node_modules/*
 services/.env/*
 services/ocr/lm/*
-third_party/kenlm/*
+third_party/*
 data/vi_clean/*
 data/vi_raw/*
+tmp/*

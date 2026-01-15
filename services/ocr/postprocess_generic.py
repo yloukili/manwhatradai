@@ -1,3 +1,9 @@
+from ocr.lattice_vi import choose_best_sentence
+
+
+# -----------------------------------------------------
+# GEOMETRY
+# -----------------------------------------------------
 def quad_to_bbox(poly):
     xs = [p[0] for p in poly]
     ys = [p[1] for p in poly]
@@ -9,6 +15,9 @@ def quad_to_bbox(poly):
     }
 
 
+# -----------------------------------------------------
+# BUBBLE GROUPING (UNCHANGED, WORKING)
+# -----------------------------------------------------
 def group_lines_into_bubbles(lines):
     if not lines:
         return []
@@ -65,38 +74,88 @@ def group_lines_into_bubbles(lines):
     return bubbles
 
 
-def parse_paddle_output(raw, conf_threshold):
-    item = raw[0]
-
-    texts = item.get("rec_texts", [])
-    polys = item.get("rec_polys", [])
-    scores = item.get("rec_scores", [])
-
+# -----------------------------------------------------
+# MAIN PARSER
+# -----------------------------------------------------
+def parse_paddle_output(raw, conf_threshold, lang=None):
     lines = []
 
-    for i in range(min(len(texts), len(polys))):
-        score = scores[i] if i < len(scores) else None
-        if score is not None and score < conf_threshold:
-            continue
+    # -------------------------------------------------
+    # MULTI-PASS MODE (ALREADY ALIGNED)
+    # -------------------------------------------------
+    if isinstance(raw, dict) and raw.get("mode") == "multi_pass":
+        for line_group in raw["aligned"]:
+            texts = []
+            scores = []
+            ref = None
 
-        bbox = quad_to_bbox(polys[i])
-        lines.append({
-            **bbox,
-            "text": texts[i].strip(),
-            "confidence": score
-        })
+            for item in line_group:
+                if not item:
+                    continue
 
+                text = item.get("text", "")
+                score = item.get("score", 1.0)
+
+                if score >= conf_threshold:
+                    texts.append(text)
+                    scores.append(score)
+
+                if ref is None:
+                    ref = item
+
+            if not texts or not ref:
+                continue
+
+            final_text = texts[0]
+            if lang == "vietnamese" and len(texts) > 1:
+                final_text = choose_best_sentence(texts)
+            bbox = quad_to_bbox(ref["box"])
+
+            lines.append({
+                "xmin": bbox["xmin"],
+                "ymin": bbox["ymin"],
+                "xmax": bbox["xmax"],
+                "ymax": bbox["ymax"],
+                "text": final_text,
+                "score": max(scores),
+            })
+
+    # -------------------------------------------------
+    # SINGLE PASS MODE
+    # -------------------------------------------------
+    elif isinstance(raw, list):
+        for item in raw:
+            if item.get("score", 0.0) < conf_threshold:
+                continue
+
+            bbox = quad_to_bbox(item["poly"])
+            lines.append({
+                "xmin": bbox["xmin"],
+                "ymin": bbox["ymin"],
+                "xmax": bbox["xmax"],
+                "ymax": bbox["ymax"],
+                "text": item["text"],
+                "score": item["score"],
+            })
+
+    # -------------------------------------------------
+    # GROUP INTO BUBBLES
+    # -------------------------------------------------
     bubbles = group_lines_into_bubbles(lines)
 
     regions = []
-    for b in bubbles:
+    for bubble in bubbles:
+        text = "\n".join(l["text"] for l in bubble["lines"])
+
         regions.append({
-            "box_2d": [b["ymin"], b["xmin"], b["ymax"], b["xmax"]],
-            "original": "\n".join(l["text"] for l in b["lines"]),
-            "confidence": (
-                sum(l["confidence"] for l in b["lines"] if l["confidence"])
-                / max(1, len(b["lines"]))
-            )
+            "box_2d": [
+                bubble["ymin"],
+                bubble["xmin"],
+                bubble["ymax"],
+                bubble["xmax"],
+            ],
+            "original": text,
+            "confidence": max(l["score"] for l in bubble["lines"]),
         })
 
     return regions
