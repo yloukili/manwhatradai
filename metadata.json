@@ -1,0 +1,5 @@
+{
+  "name": "ManhwaTrad AI",
+  "description": "An AI-powered Manhwa translation assistant that detects text, translates Korean to English, and allows real-time in-painting edits.",
+  "requestFramePermissions": []
+}

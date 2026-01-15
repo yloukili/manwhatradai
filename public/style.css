@@ -1,0 +1,76 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #1e293b; 
+}
+::-webkit-scrollbar-thumb {
+    background: #475569; 
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #64748b; 
+}
+
+/* Region styling */
+.region-box {
+    transition: background-color 0.2s, border-color 0.2s;
+    user-select: none;
+    border: none; /* No visible border for bubbles */
+}
+.region-box:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+.region-box.selected {
+    background-color: rgba(99, 102, 241, 0.15);
+    outline: 2px solid #818cf8; /* Selected state indicator */
+    outline-offset: 2px;
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
+    z-index: 100; /* Ensure selected is always above other bubbles */
+}
+
+/* Resize Handle */
+.resize-handle {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    width: 12px;
+    height: 12px;
+    background: #818cf8;
+    border: 2px solid #1e293b;
+    border-radius: 2px;
+    cursor: nwse-resize;
+    display: none;
+}
+.region-box.selected .resize-handle {
+    display: block;
+}
+
+/* Thumbnails */
+.thumbnail-btn {
+    cursor: grab;
+    transition: transform 0.2s, opacity 0.2s;
+}
+.thumbnail-btn:active { cursor: grabbing; }
+.thumbnail-btn.dragging { opacity: 0.4; transform: scale(0.9); border-style: dashed; }
+.thumbnail-btn.drag-over { transform: scale(1.05); border-color: #818cf8; box-shadow: 0 0 15px rgba(99, 102, 241, 0.5); }
+
+/* Animation */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+.fade-in {
+    animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Image containment */
+#work-area {
+    touch-action: none;
+}
