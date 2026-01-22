@@ -1,5 +1,4 @@
-from ocr.lattice_vi import choose_best_sentence
-
+import numpy as np
 
 # -----------------------------------------------------
 # GEOMETRY
@@ -14,9 +13,8 @@ def quad_to_bbox(poly):
         "ymax": int(max(ys)),
     }
 
-
 # -----------------------------------------------------
-# BUBBLE GROUPING (UNCHANGED, WORKING)
+# BUBBLE GROUPING
 # -----------------------------------------------------
 def group_lines_into_bubbles(lines):
     if not lines:
@@ -73,80 +71,49 @@ def group_lines_into_bubbles(lines):
     bubbles.append(current)
     return bubbles
 
-
 # -----------------------------------------------------
 # MAIN PARSER
 # -----------------------------------------------------
-def parse_paddle_output(raw, conf_threshold, lang=None):
+def parse_paddle_output(raw, conf_threshold=0.5, lang=None):
+    """
+    Parse PaddleOCR / PaddleX output for single pass mode.
+    Works with items containing 'rec_texts', 'rec_scores', 'rec_polys'.
+    """
     lines = []
 
-    # -------------------------------------------------
-    # MULTI-PASS MODE (ALREADY ALIGNED)
-    # -------------------------------------------------
-    if isinstance(raw, dict) and raw.get("mode") == "multi_pass":
-        for line_group in raw["aligned"]:
-            texts = []
-            scores = []
-            ref = None
+    if isinstance(raw, list):
+        for item in raw:
+            rec_texts = item.get("rec_texts", [])
+            rec_scores = item.get("rec_scores", [])
+            rec_polys = item.get("rec_polys", item.get("dt_polys", []))
 
-            for item in line_group:
-                if not item:
+            if not rec_texts or not rec_scores or not rec_polys:
+                continue
+
+            for text, score, poly in zip(rec_texts, rec_scores, rec_polys):
+                if score < conf_threshold:
                     continue
 
-                text = item.get("text", "")
-                score = item.get("score", 1.0)
+                # convert np.array to list if needed
+                if isinstance(poly, np.ndarray):
+                    poly = poly.tolist()
 
-                if score >= conf_threshold:
-                    texts.append(text)
-                    scores.append(score)
+                bbox = quad_to_bbox(poly)
+                lines.append({
+                    "xmin": bbox["xmin"],
+                    "ymin": bbox["ymin"],
+                    "xmax": bbox["xmax"],
+                    "ymax": bbox["ymax"],
+                    "text": text,
+                    "score": score,
+                })
 
-                if ref is None:
-                    ref = item
-
-            if not texts or not ref:
-                continue
-
-            final_text = texts[0]
-            if lang == "vietnamese" and len(texts) > 1:
-                final_text = choose_best_sentence(texts)
-            bbox = quad_to_bbox(ref["box"])
-
-            lines.append({
-                "xmin": bbox["xmin"],
-                "ymin": bbox["ymin"],
-                "xmax": bbox["xmax"],
-                "ymax": bbox["ymax"],
-                "text": final_text,
-                "score": max(scores),
-            })
-
-    # -------------------------------------------------
-    # SINGLE PASS MODE
-    # -------------------------------------------------
-    elif isinstance(raw, list):
-        for item in raw:
-            if item.get("score", 0.0) < conf_threshold:
-                continue
-
-            bbox = quad_to_bbox(item["poly"])
-            lines.append({
-                "xmin": bbox["xmin"],
-                "ymin": bbox["ymin"],
-                "xmax": bbox["xmax"],
-                "ymax": bbox["ymax"],
-                "text": item["text"],
-                "score": item["score"],
-            })
-
-    # -------------------------------------------------
     # GROUP INTO BUBBLES
-    # -------------------------------------------------
     bubbles = group_lines_into_bubbles(lines)
 
     regions = []
     for bubble in bubbles:
-        text = "\n".join(l["text"] for l in bubble["lines"])
-
+        text = " ".join(l["text"] for l in bubble["lines"])
         regions.append({
             "box_2d": [
                 bubble["ymin"],

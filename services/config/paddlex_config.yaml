@@ -1,0 +1,62 @@
+pipeline_name: OCR
+
+Pipeline:
+  name: OCR
+
+Global:
+  device: cpu
+  use_gpu: false
+
+# ---------------------------------------------------
+# Document preprocessor (OBLIGATOIRE)
+# ---------------------------------------------------
+DocPreprocessor:
+  pipeline_name: DocPreprocessor
+  model_name: doc_preprocessor
+  use_doc_orientation_classify: false
+  use_doc_unwarping: false
+
+# ---------------------------------------------------
+# Text detection
+# ---------------------------------------------------
+Det:
+  model_name: PP-OCRv5_server_rec
+
+TextDetection:
+  pipeline_name: TextDetection
+  model_name: PP-OCRv5_server_det
+  limit_side_len: 960
+  limit_type: max
+  thresh: 0.3
+  box_thresh: 0.6
+  unclip_ratio: 1.5
+
+# ---------------------------------------------------
+# Text recognition (CRNN)
+# ---------------------------------------------------
+
+Rec:
+  model_name: PP-OCRv5_server_rec
+  char_dict_path: /home/local/JEMS/yloukili/training/manwhatradai/services/ocr/char_dicts/vi_char_dict.txt
+  use_space_char: true
+
+TextRecognition:
+  pipeline_name: TextRecognition
+  model_name: PP-OCRv5_server_rec
+  batch_size: 1
+  char_dict_path: /home/local/JEMS/yloukili/training/manwhatradai/services/ocr/char_dicts/vi_char_dict.txt
+  use_space_char: true
+
+# ---------------------------------------------------
+# PostProcess → CTC + LM (CE QUE TU VEUX)
+# ---------------------------------------------------
+PostProcess:
+  name: CTCLabelDecode
+  lang: vi
+  lm_path: /home/local/JEMS/yloukili/training/manwhatradai/services/ocr/lm/vi.klm
+  beam_size: 10
+  use_lm: true
+  lm_weight: 0.6
+  word_score: -0.5
+
+

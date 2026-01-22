@@ -1,0 +1,19 @@
+Global:
+  use_gpu: false
+
+Architecture:
+  model_type: rec
+  algorithm: CRNN
+
+Rec:
+  char_dict_path: /home/local/JEMS/yloukili/training/manwhatradai/services/ocr/char_dicts/vi_char_dict.txt
+  use_space_char: true
+
+PostProcess:
+  name: CTCLabelDecode
+  beam_size: 10
+  use_lm: true
+  lang: vi
+  lm_path: /home/local/JEMS/yloukili/training/manwhatradai/services/ocr/lm/vi.klm
+  lm_weight: 0.6
+  word_score: -0.5

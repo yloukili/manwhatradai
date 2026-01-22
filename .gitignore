@@ -1,6 +1,8 @@
 node_modules/*
 services/.env/*
 services/ocr/lm/*
+services/ocr/__pycache__/*
+services/utils/__pycache__/*
 third_party/*
 data/vi_clean/*
 data/vi_raw/*
