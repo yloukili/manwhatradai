@@ -1,0 +1,3 @@
+[submodule "services/PaddleOCR"]
+	path = services/PaddleOCR
+	url = https://github.com/yloukili/PaddleOCR.git
