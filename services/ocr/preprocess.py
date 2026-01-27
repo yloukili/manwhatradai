@@ -49,6 +49,8 @@ def enhance_for_vietnamese(img: np.ndarray) -> np.ndarray:
 
     # CRITICAL: convert back to 3 channels
     return cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
+    # return img
+    
 
 
 def preprocess_image(img: np.ndarray, lang: str) -> np.ndarray:

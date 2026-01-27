@@ -10,13 +10,11 @@ PADDLEX_YAML = os.path.join(CONFIG_DIR, "paddlex_config.yaml")
 # OCR ENGINES
 # -----------------------------------------------------
 OCR_ENGINES = {
-    "korean": PaddleOCR(lang="korean", use_textline_orientation=False),
-    "japanese": PaddleOCR(lang="japan", use_textline_orientation=False),
-    "chinese_s": PaddleOCR(lang="ch", use_textline_orientation=False),
-    "vietnamese": PaddleOCR(lang="vi", use_textline_orientation=False),
-    # "vietnamese": PaddleOCR(lang="vi", use_textline_orientation=False, return_logits=True, config_path=OCR_VI_YAML),
-    # "vietnamese": PaddleOCR(lang="vi", use_textline_orientation=False, paddlex_config=PADDLEX_YAML),
-    "english": PaddleOCR(lang="en", use_textline_orientation=False),
+    "korean": PaddleOCR(lang="korean", use_textline_orientation=False, use_doc_orientation_classify=False),
+    "japanese": PaddleOCR(lang="japan", use_textline_orientation=False, use_doc_orientation_classify=False),
+    "chinese_s": PaddleOCR(lang="ch", use_textline_orientation=False, use_doc_orientation_classify=False),
+    "vietnamese": PaddleOCR(lang="vi", use_textline_orientation=False, use_doc_orientation_classify=False),
+    # "english": PaddleOCR(lang="en", use_textline_orientation=False),
 }
 
 CONF_THRESHOLDS = {
@@ -24,7 +22,7 @@ CONF_THRESHOLDS = {
     "korean": 0.45,
     "japanese": 0.45,
     "chinese_s": 0.45,
-    "english": 0.50,
+    # "english": 0.50,
 }
 
 DEFAULT_LANG = "vietnamese"

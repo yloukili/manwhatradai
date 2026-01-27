@@ -3,6 +3,7 @@ services/.env/*
 services/ocr/lm/*
 services/ocr/__pycache__/*
 services/utils/__pycache__/*
+services/debug/*
 third_party/*
 data/vi_clean/*
 data/vi_raw/*

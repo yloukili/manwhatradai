@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -111,7 +112,7 @@
             </div>
 
             <!-- Right Sidebar: Properties -->
-            <div class="w-96 bg-slate-900 border-l border-slate-800 flex flex-col shadow-xl z-30 shrink-0">
+            <div class="w-96 bg-slate-900 border-l border-slate-800 flex flex-col shadow-xl z-30 shrink-0 relative">
                 <div class="p-6 border-b border-slate-800 space-y-4">
                     <div class="flex justify-between items-start">
                         <div>
@@ -229,16 +230,22 @@
                                         Transp.
                                     </label>
                                 </div>
-                                <div id="bg-color-control" class="flex items-center gap-2 bg-slate-800 p-2 rounded-lg border border-slate-700">
+                                <div id="bg-color-control" class="flex items-center gap-1 bg-slate-800 p-1.5 rounded-lg border border-slate-700">
                                     <input id="bg-color-picker" type="color" value="#ffffff" class="w-8 h-8 rounded-md cursor-pointer bg-transparent border-none">
-                                    <span class="text-xs font-mono uppercase text-slate-400" id="bg-color-hex">#FFFFFF</span>
+                                    <button id="bg-eyedropper-btn" class="p-1.5 hover:bg-slate-700 rounded-md text-slate-400 hover:text-indigo-400 transition-colors" title="Pick color from image">
+                                        <i data-lucide="pipette" class="w-3.5 h-3.5"></i>
+                                    </button>
+                                    <span class="text-[10px] font-mono uppercase text-slate-500 flex-1 text-center" id="bg-color-hex">#FFFFFF</span>
                                 </div>
                             </div>
                             <div class="space-y-2">
                                 <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Text Color</label>
-                                <div class="flex items-center gap-2 bg-slate-800 p-2 rounded-lg border border-slate-700">
+                                <div id="text-color-control" class="flex items-center gap-1 bg-slate-800 p-1.5 rounded-lg border border-slate-700">
                                     <input id="text-color-picker" type="color" value="#000000" class="w-8 h-8 rounded-md cursor-pointer bg-transparent border-none">
-                                    <span class="text-xs font-mono uppercase text-slate-400" id="text-color-hex">#000000</span>
+                                    <button id="text-eyedropper-btn" class="p-1.5 hover:bg-slate-700 rounded-md text-slate-400 hover:text-indigo-400 transition-colors" title="Pick color from image">
+                                        <i data-lucide="pipette" class="w-3.5 h-3.5"></i>
+                                    </button>
+                                    <span class="text-[10px] font-mono uppercase text-slate-500 flex-1 text-center" id="text-color-hex">#000000</span>
                                 </div>
                             </div>
                         </div>
@@ -250,22 +257,35 @@
                                     <i data-lucide="languages" class="w-3 h-3"></i>
                                     Original Text
                                 </label>
-                                <button id="quick-translate-btn" class="flex items-center gap-1 text-[10px] font-bold uppercase px-2 py-0.5 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 rounded hover:bg-indigo-600 hover:text-white transition-all">
-                                    <i data-lucide="sparkle" class="w-3 h-3"></i> Translate
-                                </button>
+                                <div class="flex gap-1">
+                                    <button id="open-symbols-btn" class="flex items-center gap-1 text-[10px] font-bold uppercase px-2 py-0.5 bg-slate-800 text-slate-400 border border-slate-700 rounded hover:bg-slate-700 hover:text-white transition-all">
+                                        <i data-lucide="keyboard" class="w-3 h-3"></i> Symbols
+                                    </button>
+                                    <button id="quick-translate-btn" class="flex items-center gap-1 text-[10px] font-bold uppercase px-2 py-0.5 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 rounded hover:bg-indigo-600 hover:text-white transition-all">
+                                        <i data-lucide="sparkle" class="w-3 h-3"></i> Translate
+                                    </button>
+                                </div>
                             </div>
                             <textarea id="original-text-input" placeholder="No text detected." class="w-full p-3 bg-slate-900/50 border border-slate-800 rounded-lg text-sm text-slate-400 italic min-h-[4rem] max-h-32 overflow-y-auto focus:outline-none focus:border-indigo-500/50 resize-none"></textarea>
                         </div>
 
-                        <!-- Translation -->
-                        <div class="space-y-2">
+                        <!-- Suggested Translations -->
+                        <div class="space-y-3">
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Suggested Variants</label>
+                            <div id="translation-variants-list" class="space-y-2">
+                                <!-- Variants will be injected here -->
+                            </div>
+                        </div>
+
+                        <!-- Final Translation -->
+                        <div class="space-y-2 pt-2">
                             <div class="flex justify-between items-center">
-                                <label class="text-xs font-bold text-indigo-400 uppercase tracking-wider">Translation</label>
+                                <label class="text-xs font-bold text-indigo-400 uppercase tracking-wider">Final Translation</label>
                                 <button id="reset-translation-btn" class="text-xs text-slate-500 hover:text-indigo-400 flex items-center gap-1">
                                     <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Reset
                                 </button>
                             </div>
-                            <textarea id="translation-input" placeholder="Type translation..." class="w-full p-4 bg-slate-800 border-2 rounded-xl text-slate-100 border-indigo-500/30 focus:border-indigo-500 focus:outline-none min-h-[6rem] resize-y"></textarea>
+                            <textarea id="translation-input" placeholder="Type final translation..." class="w-full p-4 bg-slate-800 border-2 rounded-xl text-slate-100 border-indigo-500/30 focus:border-indigo-500 focus:outline-none min-h-[6rem] resize-y"></textarea>
                         </div>
 
                         <div class="flex items-center gap-4 py-2">
@@ -287,6 +307,29 @@
             </div>
         </div>
     </main>
+
+    <!-- Character Palette (Floating Non-Blocking) -->
+    <div id="symbols-modal" class="hidden fixed top-24 right-[400px] z-[110] w-72 pointer-events-none drop-shadow-2xl">
+        <div class="relative bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 pointer-events-auto">
+            <div class="p-3 border-b border-slate-800 flex justify-between items-center bg-slate-800/30">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="keyboard" class="w-4 h-4 text-indigo-400"></i>
+                    <h3 class="text-xs font-bold text-slate-200 uppercase tracking-widest">Symbols</h3>
+                </div>
+                <button id="close-symbols-modal" class="p-1.5 hover:bg-slate-700 rounded-lg transition-colors">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+            <div class="p-4">
+                <div id="symbols-grid" class="grid grid-cols-6 gap-1.5 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+                    <!-- Symbols injected here -->
+                </div>
+            </div>
+            <div class="p-2 bg-slate-950/40 border-t border-slate-800">
+                 <p class="text-[9px] text-center text-slate-500 italic">Inserts at cursor in last focused field.</p>
+            </div>
+        </div>
+    </div>
 
     <!-- Loading Overlay -->
     <div id="loading-overlay" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex flex-col items-center justify-center">

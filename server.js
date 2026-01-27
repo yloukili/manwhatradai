@@ -154,7 +154,7 @@ For EACH item, return an element of a JSON array with the form:
 {
  "box_2d": [ymin, xmin, ymax, xmax],
  "original": "...",
- "translation": "...",
+ "translations": ["...", "..."],
  "type": "dialogue" | "narration" | "sfx"
 }
 
@@ -164,7 +164,11 @@ Strict rules:
 - NO extra text.
 - NO comments.
 - translation language is always english.
-- Translation field must only contained the translation, nothing more. 
+- Translation fields must only contain the translation, nothing more. 
+- Each translation must come in 3 variants: 
+  . Literal
+  . Semantic variant of literal
+  . stylistic variant of literal 
 
 ITEMS:
 ${itemsText}
@@ -332,11 +336,27 @@ app.post("/api/render", async (req, res) => {
 app.post('/api/translate', async (req, res) => {
     try {
         const { text, type } = req.body;
+
         if (!text) return res.status(400).json({ error: "No text provided" });
         let prompt = `
-        You are a professional Manhwa translator. Translate the provided text into natural, immersive English. 
-        If it is SFX, make it punchy and comic-style. Return ONLY the translated string. 
-        ONLY give one version of the translation.
+        You are a professional translator, you handle OCR texts extracted from comics. Translate the provided text into natural, immersive English. 
+        The expected return format is a JSON object with the form:
+        {
+          "translations": ["...", "...", "..."],
+          "type": "dialogue" | "narration" | "sfx"
+        }
+          Strict rules:
+          - RETURN ONLY a JSON OBJECT, .
+          - NO explanations.
+          - NO extra text.
+          - NO comments.
+          - translation language is always english.
+          - Translation fields must only contain the translation, nothing more. 
+          - Each translation must come in 3 variants: 
+            . Literal a strict traduction of the orifinal text
+            . Semantic variant of literal
+            . stylistic variant of literal 
+
         Translate this: "${text}"`;
 
       const body = {
@@ -356,12 +376,11 @@ app.post('/api/translate', async (req, res) => {
         throw new Error("Ollama returned " + response.status);
       }
 
-      console.log(response);
       const json = await response.json();
       let txt = json.response;
       console.log(txt);
+      res.json(txt);
 
-      res.json({ translation: txt.trim().replace(/^"|"$/g, '') });
     } catch (error) {
         console.error("Translation Error:", error);
         res.status(500).json({ error: "Translation failed" });

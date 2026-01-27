@@ -20,13 +20,13 @@ DIACRITIC_FAMILIES = {
           "â","ầ","ấ","ẩ","ẫ","ậ",
           "ǎ","ă","ằ","ắ","ẳ","ẵ","ặ","ā"],
     "e": ["e","è","é","ẻ","ẽ","ẹ",
-          "ê","ề","ế","ể","ễ","ệ","ē"],
-    "i": ["i","ì","í","ỉ","ĩ","ị"],
+          "ê","ề","ế","ể","ễ","ệ","ē","ě"],
+    "i": ["i","ì","í","ỉ","ĩ","ị","ī"],
     "o": ["o","ò","ó","ỏ","õ","ọ",
           "ô","ồ","ố","ổ","ỗ","ộ",
           "ơ","ờ","ớ","ở","ỡ","ợ"],
     "u": ["u","ù","ú","ủ","ũ","ụ",
-          "ư","ừ","ứ","ử","ữ","ự"],
+          "ư","ừ","ứ","ử","ữ","ự","ü"],
     "y": ["y","ỳ","ý","ỷ","ỹ","ỵ"],
     "d": ["d","đ"],
 }
@@ -73,7 +73,7 @@ def split_candidates(token):
 
     # voyelle → consonne
     for i in range(n - 1):
-        if token[i].lower() in "aeiouyàáảãạāǎăằắẳẵặâầấẩẫậèéẻẽẹēêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵ" and token[i+1].lower() not in "aeiouy":
+        if token[i].lower() in "aeiouyàáảãạāǎăằắẳẵặâầấẩẫậèéẻẽẹēêềếểễệěìíỉĩịīòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựüỳýỷỹỵ" and token[i+1].lower() not in "aeiouy":
             split_positions.add(i + 1)
 
 
@@ -102,7 +102,7 @@ def split_candidates(token):
 
         # bonus voyelle → consonne
         score += len(
-            re.findall(r"[aeiouyàáảãạāǎăằắẳẵặâầấẩẫậèéẻẽẹēêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵ] [^aeiouy]", cand, flags=re.IGNORECASE)
+            re.findall(r"[aeiouyàáảãạāǎăằắẳẵặâầấẩẫậèéẻẽẹēêềếểễệěìíỉĩịīòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựüỳýỷỹỵ] [^aeiouy]", cand, flags=re.IGNORECASE)
         ) * 1.0
 
         # bonus token long
@@ -123,7 +123,7 @@ def is_consonant_only(word):
     
     return (
         len(word) > 1 and
-        not re.search(r"[aeiouyàáảãạāǎăằắẳẵặâầấẩẫậèéẻẽẹēêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵ]", word, flags=re.IGNORECASE)
+        not re.search(r"[aeiouyàáảãạāǎăằắẳẵặâầấẩẫậèéẻẽẹēêềếểễệěìíỉĩịīòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựüỳýỷỹỵ]", word, flags=re.IGNORECASE)
     )
 def is_real_one_letter_word(word: str) -> bool:
     if not word:
@@ -223,49 +223,61 @@ class KenLMPostProcessor:
         # Diacritiques mot à mot
         final_tokens = []
         words = best_phrase.split()
-        best_tokens = self.decode_with_beam(words, beam_size=6)
+        best_tokens = self.decode_with_beam(words, beam_size=10)
         return " ".join(best_tokens)
-        for i, w in enumerate(words):
-            vars = list(generate_variants(w))
-            if len(vars) == 1:
-                final_tokens.append(w)
-                continue
 
-            ctx = " ".join(words[max(0,i-1):i] + ["{}"] + words[i+1:i+2])
-            best = max(vars, key=lambda v: self.score(ctx.format(v)))
-            final_tokens.append(best)
-
-        return " ".join(final_tokens)
-    def filter_word_variants(self, word, max_keep=5):
+    def filter_word_variants(self, word, max_keep=10):
         vars = list(generate_variants(word))
         scored = []
         for v in vars:
             # pénalité mot absurde
             if is_consonant_only(v):
+                print("WTF", v)
                 continue
 
             s = self.score(v)
             scored.append((v, s))
-
         # garder les meilleurs
         scored.sort(key=lambda x: x[1], reverse=True)
-        return [v for v, _ in scored[:max_keep]]
+        result = [v for v, _ in scored[:max_keep]]
+        return result
 
     def decode_with_beam(self, words, beam_size=10):
         beams = [([], 0.0)]  # (tokens, score)
 
         for i, w in enumerate(words):
             variants = self.filter_word_variants(w)
+
+            # 🔒 FALLBACK 1 : aucune variante valide
+            if not variants:
+                print(f"NO VARIANT FOR {w}")
+                variants = [w]
+
             new_beams = []
+
             for tokens, score in beams:
                 for v in variants:
                     phrase = " ".join(tokens + [v])
                     s = self.score(phrase)
                     new_beams.append((tokens + [v], s))
 
-            # garder les meilleurs beams
+            # 🔒 FALLBACK 2 : beam effondré
+            if not new_beams:
+                print(f"NO NEW BEAM FOR {beams}")
+                # on propage les beams existants en ajoutant le mot brut
+                new_beams = [
+                    (tokens + [w], score)
+                    for tokens, score in beams
+                ]
+
+            # garder les meilleurs
             new_beams.sort(key=lambda x: x[1], reverse=True)
             beams = new_beams[:beam_size]
+
+        # 🔒 FALLBACK FINAL : sécurité absolue
+        if not beams:
+            print(f"NO BEAM CREATED FOR {words}")
+            return words[:]  # copie défensive
 
         return beams[0][0]
 # -------------------------------
