@@ -1,53 +1,76 @@
-
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ManhwaSync AI</title>
-    
+
     <!-- CDNs -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    
+
     <!-- Icons & Fonts -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&family=Inter:wght@400;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&family=Inter:wght@400;700&family=Bebas+Neue&display=swap"
+        rel="stylesheet">
 
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body class="bg-slate-950 text-slate-100 font-sans overflow-hidden">
 
     <!-- Header -->
-    <header class="h-16 border-b border-slate-800 bg-slate-900/50 backdrop-blur-md flex items-center justify-between px-6 fixed top-0 w-full z-50">
+    <header
+        class="h-16 border-b border-slate-800 bg-slate-900/50 backdrop-blur-md flex items-center justify-between px-6 fixed top-0 w-full z-50">
         <div class="flex items-center gap-4">
             <div class="flex items-center gap-2">
                 <div class="bg-indigo-600 p-1.5 rounded-lg">
                     <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
                 </div>
-                <h1 class="text-lg font-bold tracking-tight hidden md:block">ManhwaSync <span class="text-indigo-400">AI</span></h1>
+                <h1 class="text-lg font-bold tracking-tight hidden md:block">ManhwaSync <span
+                        class="text-indigo-400">AI</span></h1>
             </div>
-            
-            <input id="project-title" type="text" placeholder="Untitled Project" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-indigo-500 w-32 md:w-48 transition-all" />
+
+            <input id="project-title" type="text" placeholder="Untitled Project"
+                class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-indigo-500 w-32 md:w-48 transition-all" />
         </div>
-        
+
         <div class="flex items-center gap-3">
             <!-- Zoom Control -->
             <div class="hidden lg:flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700">
                 <i data-lucide="zoom-in" class="w-4 h-4 text-slate-400"></i>
-                <input id="zoom-slider" type="range" min="0.1" max="3" step="0.1" value="1" class="w-24 accent-indigo-500">
+                <input id="zoom-slider" type="range" min="0.1" max="3" step="0.1" value="1"
+                    class="w-24 accent-indigo-500">
                 <span id="zoom-percent" class="text-[10px] font-mono w-8 text-slate-400">100%</span>
             </div>
 
-            <div id="processing-indicator" class="hidden flex items-center gap-3 bg-slate-800 px-4 py-1.5 rounded-full text-sm border border-slate-700">
+            <!-- Language Selector -->
+            <div class="hidden sm:flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700">
+                <i data-lucide="globe" class="w-4 h-4 text-slate-400"></i>
+                <select id="language-select"
+                    class="bg-transparent text-[10px] font-bold uppercase text-slate-300 focus:outline-none cursor-pointer">
+                    <option value="auto">Auto-detect</option>
+                    <option value="korean">Korean</option>
+                    <option value="japanese">Japanese</option>
+                    <option value="chinese_s">Chinese</option>
+                    <option value="vietnamese">Vietnamese</option>
+                </select>
+            </div>
+
+            <div id="processing-indicator"
+                class="hidden flex items-center gap-3 bg-slate-800 px-4 py-1.5 rounded-full text-sm border border-slate-700">
                 <i data-lucide="loader-2" class="w-4 h-4 animate-spin text-indigo-400"></i>
                 <span id="processing-text">Processing...</span>
             </div>
-            <button id="load-project-btn" class="text-xs text-slate-400 hover:text-white flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-800 hover:bg-slate-800 transition-all">
+            <button id="load-project-btn"
+                class="text-xs text-slate-400 hover:text-white flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-800 hover:bg-slate-800 transition-all">
                 <i data-lucide="folder-open" class="w-4 h-4"></i> Load
             </button>
-            <button id="save-project-btn" class="text-xs text-slate-400 hover:text-white flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-800 hover:bg-slate-800 transition-all">
+            <button id="save-project-btn"
+                class="text-xs text-slate-400 hover:text-white flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-800 hover:bg-slate-800 transition-all">
                 <i data-lucide="save" class="w-4 h-4"></i> Save
             </button>
         </div>
@@ -55,34 +78,47 @@
 
     <!-- Main Content -->
     <main class="pt-16 h-screen w-full relative">
-        
+
         <!-- View: Upload Zone -->
-        <div id="upload-view" class="flex flex-col items-center justify-center h-full p-8 transition-opacity duration-300 overflow-y-auto">
+        <div id="upload-view"
+            class="flex flex-col items-center justify-center h-full p-8 transition-opacity duration-300 overflow-y-auto">
             <div class="text-center mb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <h2 class="text-5xl font-black text-white tracking-tight mb-4">Welcome to ManhwaSync</h2>
-                <p class="text-slate-400 text-xl max-w-lg mx-auto">AI-powered comic translation and editing. Upload images to begin.</p>
+                <p class="text-slate-400 text-xl max-w-lg mx-auto">AI-powered comic translation and editing. Upload
+                    images to begin.</p>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl animate-in fade-in zoom-in-95 duration-700 delay-150">
-                <div id="drop-zone" class="group relative bg-slate-900/40 border-2 border-dashed border-slate-800 hover:border-indigo-500 rounded-[2rem] p-10 flex flex-col items-center text-center transition-all duration-300 cursor-pointer overflow-hidden">
-                    <div class="absolute inset-0 bg-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <div class="w-20 h-20 bg-indigo-600/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-indigo-600/20 transition-all duration-300">
+            <div
+                class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl animate-in fade-in zoom-in-95 duration-700 delay-150">
+                <div id="drop-zone"
+                    class="group relative bg-slate-900/40 border-2 border-dashed border-slate-800 hover:border-indigo-500 rounded-[2rem] p-10 flex flex-col items-center text-center transition-all duration-300 cursor-pointer overflow-hidden">
+                    <div class="absolute inset-0 bg-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    </div>
+                    <div
+                        class="w-20 h-20 bg-indigo-600/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-indigo-600/20 transition-all duration-300">
                         <i data-lucide="image-plus" class="w-10 h-10 text-indigo-400"></i>
                     </div>
                     <h3 class="text-2xl font-bold text-white mb-2">New Chapter</h3>
                     <p class="text-slate-500 mb-8 max-w-[240px]">Drag & drop images or click to select.</p>
-                    <button id="select-files-btn" class="mt-auto px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold shadow-lg shadow-indigo-600/20 transition-all active:scale-95">Select Images</button>
+                    <button id="select-files-btn"
+                        class="mt-auto px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold shadow-lg shadow-indigo-600/20 transition-all active:scale-95">Select
+                        Images</button>
                     <input id="file-input" type="file" multiple accept=".zip,.cbz,image/*" class="hidden" />
                 </div>
 
-                <div id="resume-project-card" class="group relative bg-slate-900/40 border-2 border-slate-800 hover:border-slate-600 rounded-[2rem] p-10 flex flex-col items-center text-center transition-all duration-300 cursor-pointer overflow-hidden">
-                    <div class="absolute inset-0 bg-slate-700/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <div class="w-20 h-20 bg-slate-700/20 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-slate-700/40 transition-all duration-300">
+                <div id="resume-project-card"
+                    class="group relative bg-slate-900/40 border-2 border-slate-800 hover:border-slate-600 rounded-[2rem] p-10 flex flex-col items-center text-center transition-all duration-300 cursor-pointer overflow-hidden">
+                    <div class="absolute inset-0 bg-slate-700/5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    </div>
+                    <div
+                        class="w-20 h-20 bg-slate-700/20 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-slate-700/40 transition-all duration-300">
                         <i data-lucide="folder-open" class="w-10 h-10 text-slate-400"></i>
                     </div>
                     <h3 class="text-2xl font-bold text-white mb-2">Resume Project</h3>
                     <p class="text-slate-500 mb-8 max-w-[240px]">Open a .mhs project file.</p>
-                    <button id="resume-project-btn" class="mt-auto px-8 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold transition-all active:scale-95">Open .mhs</button>
+                    <button id="resume-project-btn"
+                        class="mt-auto px-8 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold transition-all active:scale-95">Open
+                        .mhs</button>
                     <input id="project-input" type="file" accept=".mhs" class="hidden" />
                 </div>
             </div>
@@ -90,20 +126,29 @@
 
         <!-- View: Editor -->
         <div id="editor-view" class="hidden flex h-full">
-            <div id="thumbnails-sidebar" class="w-24 bg-slate-900 border-r border-slate-800 flex flex-col items-center shrink-0">
-                <div id="thumbnails-container" class="w-full flex-1 flex flex-col items-center py-4 overflow-y-auto overflow-x-hidden"></div>
-                <button id="add-page-btn" class="w-16 h-16 mb-6 flex flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-slate-700 hover:border-indigo-500 hover:bg-indigo-500/10 text-slate-500 hover:text-indigo-400 transition-all shrink-0 group" title="Add new pages">
+            <div id="thumbnails-sidebar"
+                class="w-24 bg-slate-900 border-r border-slate-800 flex flex-col items-center shrink-0">
+                <div id="thumbnails-container"
+                    class="w-full flex-1 flex flex-col items-center py-4 overflow-y-auto overflow-x-hidden"></div>
+                <button id="add-page-btn"
+                    class="w-16 h-16 mb-6 flex flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-slate-700 hover:border-indigo-500 hover:bg-indigo-500/10 text-slate-500 hover:text-indigo-400 transition-all shrink-0 group"
+                    title="Add new pages">
                     <i data-lucide="plus-circle" class="w-6 h-6 group-hover:scale-110 transition-transform"></i>
                     <span class="text-[10px] font-bold uppercase tracking-tighter">Add</span>
                 </button>
             </div>
 
-            <div class="flex-1 relative bg-slate-950 overflow-auto flex justify-center items-start p-4 md:p-8" id="canvas-container">
-                <div id="work-area" class="relative shadow-2xl shadow-black transition-all duration-200 shrink-0" style="width: 0; height: 0;">
-                    <img id="main-image" src="" alt="Canvas" class="w-full h-full block pointer-events-none select-none" />
+            <div class="flex-1 relative bg-slate-950 overflow-auto flex justify-center items-start p-4 md:p-8"
+                id="canvas-container">
+                <div id="work-area" class="relative shadow-2xl shadow-black transition-all duration-200 shrink-0"
+                    style="width: 0; height: 0;">
+                    <img id="main-image" src="" alt="Canvas"
+                        class="w-full h-full block pointer-events-none select-none" />
                     <div id="overlays-layer" class="absolute inset-0 cursor-crosshair"></div>
-                    <div id="workspace-loading" class="hidden absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] flex flex-col items-center justify-center z-40 pointer-events-none">
-                        <div class="bg-slate-900/90 p-4 rounded-2xl border border-slate-700 shadow-2xl flex items-center gap-3">
+                    <div id="workspace-loading"
+                        class="hidden absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] flex flex-col items-center justify-center z-40 pointer-events-none">
+                        <div
+                            class="bg-slate-900/90 p-4 rounded-2xl border border-slate-700 shadow-2xl flex items-center gap-3">
                             <i data-lucide="loader-2" class="w-5 h-5 animate-spin text-indigo-400"></i>
                             <span class="text-sm font-medium">AI is analyzing...</span>
                         </div>
@@ -120,28 +165,35 @@
                             <span id="page-filename" class="text-xs text-slate-500">filename.jpg</span>
                         </div>
                         <div class="flex gap-1">
-                            <button id="prev-page-btn" class="p-2 hover:bg-slate-800 rounded-lg disabled:opacity-30"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
-                            <button id="next-page-btn" class="p-2 hover:bg-slate-800 rounded-lg disabled:opacity-30"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
+                            <button id="prev-page-btn" class="p-2 hover:bg-slate-800 rounded-lg disabled:opacity-30"><i
+                                    data-lucide="chevron-left" class="w-5 h-5"></i></button>
+                            <button id="next-page-btn" class="p-2 hover:bg-slate-800 rounded-lg disabled:opacity-30"><i
+                                    data-lucide="chevron-right" class="w-5 h-5"></i></button>
                         </div>
                     </div>
-                    
+
                     <div class="flex flex-col gap-2">
                         <div class="grid grid-cols-2 gap-2">
-                            <button id="reanalyze-btn" class="flex items-center justify-center gap-2 py-2 px-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs font-medium text-slate-300 transition-all">
+                            <button id="reanalyze-btn"
+                                class="flex items-center justify-center gap-2 py-2 px-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs font-medium text-slate-300 transition-all">
                                 <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-indigo-400"></i>
                                 AI Re-scan
                             </button>
-                            <button id="fuse-btn" class="flex items-center justify-center gap-2 py-2 px-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs font-medium text-slate-300 transition-all">
+                            <button id="fuse-btn"
+                                class="flex items-center justify-center gap-2 py-2 px-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs font-medium text-slate-300 transition-all">
                                 <i data-lucide="combine" class="w-3.5 h-3.5 text-indigo-400"></i>
                                 Fuse Next
                             </button>
                         </div>
-                        <div id="fused-actions" class="hidden grid grid-cols-2 gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                            <button id="unfuse-btn" class="flex items-center justify-center gap-2 py-2 px-3 bg-red-950/20 hover:bg-red-900/30 border border-red-900/50 rounded-lg text-xs font-medium text-red-300 transition-all">
+                        <div id="fused-actions"
+                            class="hidden grid grid-cols-2 gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                            <button id="unfuse-btn"
+                                class="flex items-center justify-center gap-2 py-2 px-3 bg-red-950/20 hover:bg-red-900/30 border border-red-900/50 rounded-lg text-xs font-medium text-red-300 transition-all">
                                 <i data-lucide="split" class="w-3.5 h-3.5"></i>
                                 Un-fuse
                             </button>
-                            <button id="swap-fusion-btn" class="flex items-center justify-center gap-2 py-2 px-3 bg-indigo-950/20 hover:bg-indigo-900/30 border border-indigo-900/50 rounded-lg text-xs font-medium text-indigo-300 transition-all">
+                            <button id="swap-fusion-btn"
+                                class="flex items-center justify-center gap-2 py-2 px-3 bg-indigo-950/20 hover:bg-indigo-900/30 border border-indigo-900/50 rounded-lg text-xs font-medium text-indigo-300 transition-all">
                                 <i data-lucide="arrow-left-right" class="w-3.5 h-3.5"></i>
                                 Swap
                             </button>
@@ -150,31 +202,108 @@
                 </div>
 
                 <div id="editor-panel-content" class="flex-1 overflow-y-auto p-6 space-y-6">
+
+                    <!-- Fusion Editor (Visible only when fused page is active and no region selected) -->
+                    <div id="fusion-editor"
+                        class="hidden space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                        <h4 class="text-sm font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
+                            <i data-lucide="combine" class="w-4 h-4 text-indigo-400"></i>
+                            Fusion Layout
+                        </h4>
+
+                        <div class="space-y-4">
+                            <div class="space-y-2">
+                                <label
+                                    class="text-xs font-bold text-slate-500 uppercase tracking-wider">Arrangement</label>
+                                <div class="grid grid-cols-2 gap-2 p-1 bg-slate-800 rounded-lg">
+                                    <button id="fuse-orient-vert"
+                                        class="flex items-center justify-center gap-2 py-2 rounded-md text-xs font-bold transition-all bg-slate-700 text-white">
+                                        Vertical
+                                    </button>
+                                    <button id="fuse-orient-horiz"
+                                        class="flex items-center justify-center gap-2 py-2 rounded-md text-xs font-bold transition-all text-slate-400">
+                                        Horizontal
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="space-y-4 pt-4 border-t border-slate-800">
+                                <h5 class="text-xs font-bold text-slate-400 uppercase">Page 1 Offset</h5>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="space-y-1">
+                                        <label class="text-[10px] text-slate-500 font-mono">X Shift</label>
+                                        <input type="range" id="fuse-p1-x" min="-500" max="500" value="0"
+                                            class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="text-[10px] text-slate-500 font-mono">Y Shift</label>
+                                        <input type="range" id="fuse-p1-y" min="-500" max="500" value="0"
+                                            class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                                    </div>
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="text-[10px] text-slate-500 font-mono">Scale</label>
+                                    <input type="range" id="fuse-p1-scale" min="0.1" max="2" step="0.01" value="1"
+                                        class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                                </div>
+                            </div>
+
+                            <div class="space-y-4 pt-4 border-t border-slate-800">
+                                <h5 class="text-xs font-bold text-slate-400 uppercase">Page 2 Offset</h5>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="space-y-1">
+                                        <label class="text-[10px] text-slate-500 font-mono">X Shift</label>
+                                        <input type="range" id="fuse-p2-x" min="-500" max="500" value="0"
+                                            class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="text-[10px] text-slate-500 font-mono">Y Shift</label>
+                                        <input type="range" id="fuse-p2-y" min="-500" max="500" value="0"
+                                            class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                                    </div>
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="text-[10px] text-slate-500 font-mono">Scale</label>
+                                    <input type="range" id="fuse-p2-scale" min="0.1" max="2" step="0.01" value="1"
+                                        class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div id="empty-selection-msg" class="text-center text-slate-500 mt-10 space-y-6">
                         <div class="bg-slate-800/50 p-6 rounded-2xl border border-slate-700/50">
                             <i data-lucide="mouse-pointer-2" class="w-10 h-10 text-indigo-400 mx-auto mb-4"></i>
                             <p class="text-sm">Select a bubble or drag on the image to create one.</p>
                         </div>
-                        
+
                         <div class="pt-6 border-t border-slate-800">
-                             <button id="export-btn" class="w-full flex items-center justify-center gap-2 px-6 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-600/20">
+                            <button id="export-btn"
+                                class="w-full flex items-center justify-center gap-2 px-6 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-600/20">
                                 <i data-lucide="download" class="w-5 h-5"></i>
                                 Export Chapter
                             </button>
                         </div>
                     </div>
 
-                    <div id="region-editor" class="hidden space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                    <div id="region-editor"
+                        class="hidden space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                         <div class="flex justify-between items-center">
                             <h4 class="text-sm font-bold text-slate-300">Edit Bubble</h4>
                             <div class="flex items-center gap-1">
-                                <button id="move-back-btn" class="p-2 text-slate-500 hover:text-slate-300 hover:bg-slate-800 rounded-lg transition-colors" title="Send to Back">
+                                <button id="move-back-btn"
+                                    class="p-2 text-slate-500 hover:text-slate-300 hover:bg-slate-800 rounded-lg transition-colors"
+                                    title="Send to Back">
                                     <i data-lucide="layers-2" class="w-4 h-4 transform rotate-180"></i>
                                 </button>
-                                <button id="move-front-btn" class="p-2 text-slate-500 hover:text-slate-300 hover:bg-slate-800 rounded-lg transition-colors" title="Bring to Front">
+                                <button id="move-front-btn"
+                                    class="p-2 text-slate-500 hover:text-slate-300 hover:bg-slate-800 rounded-lg transition-colors"
+                                    title="Bring to Front">
                                     <i data-lucide="layers-2" class="w-4 h-4"></i>
                                 </button>
-                                <button id="delete-region-btn" class="p-2 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors ml-2" title="Delete Region">
+                                <button id="delete-region-btn"
+                                    class="p-2 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors ml-2"
+                                    title="Delete Region">
                                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                                 </button>
                             </div>
@@ -182,27 +311,33 @@
 
                         <!-- Type Toggles -->
                         <div class="flex gap-2 p-1 bg-slate-800 rounded-lg">
-                            <button id="type-dialogue-btn" class="flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all text-slate-400">
+                            <button id="type-dialogue-btn"
+                                class="flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all text-slate-400">
                                 <i data-lucide="type" class="w-4 h-4"></i> Dialogue
                             </button>
-                            <button id="type-sfx-btn" class="flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all text-slate-400">
+                            <button id="type-sfx-btn"
+                                class="flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all text-slate-400">
                                 <i data-lucide="volume-2" class="w-4 h-4"></i> SFX
                             </button>
                         </div>
 
                         <!-- Shape and Form -->
-                         <div class="grid grid-cols-2 gap-4 pt-2">
-                             <div class="space-y-2">
-                                <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Box Shape</label>
-                                <select id="shape-select" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500">
+                        <div class="grid grid-cols-2 gap-4 pt-2">
+                            <div class="space-y-2">
+                                <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Box
+                                    Shape</label>
+                                <select id="shape-select"
+                                    class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500">
                                     <option value="rect">Rectangle</option>
                                     <option value="ellipse">Ellipse</option>
                                     <option value="circle">Circle</option>
                                 </select>
                             </div>
                             <div class="space-y-2">
-                                <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Font Family</label>
-                                <select id="font-select" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500">
+                                <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Font
+                                    Family</label>
+                                <select id="font-select"
+                                    class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500">
                                     <option value="'Comic Neue', cursive">Comic Neue</option>
                                     <option value="'Bangers', cursive">Bangers (SFX)</option>
                                     <option value="'Bebas Neue', cursive">Bebas Neue</option>
@@ -214,38 +349,53 @@
                         <!-- Font Size Adjustment -->
                         <div class="space-y-2">
                             <div class="flex justify-between items-center">
-                                <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Text Scale</label>
+                                <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Text
+                                    Scale</label>
                                 <span id="font-size-val" class="text-xs font-mono text-indigo-400">1.0x</span>
                             </div>
-                            <input id="font-size-slider" type="range" min="0.5" max="3" step="0.1" value="1" class="w-full accent-indigo-500">
+                            <input id="font-size-slider" type="range" min="0.5" max="3" step="0.1" value="1"
+                                class="w-full accent-indigo-500">
                         </div>
 
                         <!-- Color Controls -->
                         <div class="grid grid-cols-2 gap-4">
                             <div class="space-y-2">
                                 <div class="flex justify-between items-center">
-                                    <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Background</label>
+                                    <label
+                                        class="text-xs font-bold text-slate-500 uppercase tracking-wider">Background</label>
                                     <label class="flex items-center gap-1 text-[10px] text-slate-400 cursor-pointer">
-                                        <input id="transparent-bg-chk" type="checkbox" class="w-3 h-3 rounded bg-slate-800 border-slate-700 text-indigo-500">
+                                        <input id="transparent-bg-chk" type="checkbox"
+                                            class="w-3 h-3 rounded bg-slate-800 border-slate-700 text-indigo-500">
                                         Transp.
                                     </label>
                                 </div>
-                                <div id="bg-color-control" class="flex items-center gap-1 bg-slate-800 p-1.5 rounded-lg border border-slate-700">
-                                    <input id="bg-color-picker" type="color" value="#ffffff" class="w-8 h-8 rounded-md cursor-pointer bg-transparent border-none">
-                                    <button id="bg-eyedropper-btn" class="p-1.5 hover:bg-slate-700 rounded-md text-slate-400 hover:text-indigo-400 transition-colors" title="Pick color from image">
+                                <div id="bg-color-control"
+                                    class="flex items-center gap-1 bg-slate-800 p-1.5 rounded-lg border border-slate-700">
+                                    <input id="bg-color-picker" type="color" value="#ffffff"
+                                        class="w-8 h-8 rounded-md cursor-pointer bg-transparent border-none">
+                                    <button id="bg-eyedropper-btn"
+                                        class="p-1.5 hover:bg-slate-700 rounded-md text-slate-400 hover:text-indigo-400 transition-colors"
+                                        title="Pick color from image">
                                         <i data-lucide="pipette" class="w-3.5 h-3.5"></i>
                                     </button>
-                                    <span class="text-[10px] font-mono uppercase text-slate-500 flex-1 text-center" id="bg-color-hex">#FFFFFF</span>
+                                    <span class="text-[10px] font-mono uppercase text-slate-500 flex-1 text-center"
+                                        id="bg-color-hex">#FFFFFF</span>
                                 </div>
                             </div>
                             <div class="space-y-2">
-                                <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Text Color</label>
-                                <div id="text-color-control" class="flex items-center gap-1 bg-slate-800 p-1.5 rounded-lg border border-slate-700">
-                                    <input id="text-color-picker" type="color" value="#000000" class="w-8 h-8 rounded-md cursor-pointer bg-transparent border-none">
-                                    <button id="text-eyedropper-btn" class="p-1.5 hover:bg-slate-700 rounded-md text-slate-400 hover:text-indigo-400 transition-colors" title="Pick color from image">
+                                <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Text
+                                    Color</label>
+                                <div id="text-color-control"
+                                    class="flex items-center gap-1 bg-slate-800 p-1.5 rounded-lg border border-slate-700">
+                                    <input id="text-color-picker" type="color" value="#000000"
+                                        class="w-8 h-8 rounded-md cursor-pointer bg-transparent border-none">
+                                    <button id="text-eyedropper-btn"
+                                        class="p-1.5 hover:bg-slate-700 rounded-md text-slate-400 hover:text-indigo-400 transition-colors"
+                                        title="Pick color from image">
                                         <i data-lucide="pipette" class="w-3.5 h-3.5"></i>
                                     </button>
-                                    <span class="text-[10px] font-mono uppercase text-slate-500 flex-1 text-center" id="text-color-hex">#000000</span>
+                                    <span class="text-[10px] font-mono uppercase text-slate-500 flex-1 text-center"
+                                        id="text-color-hex">#000000</span>
                                 </div>
                             </div>
                         </div>
@@ -253,25 +403,30 @@
                         <!-- Detected Text -->
                         <div class="space-y-2">
                             <div class="flex justify-between items-center mb-1">
-                                <label class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                                <label
+                                    class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
                                     <i data-lucide="languages" class="w-3 h-3"></i>
                                     Original Text
                                 </label>
                                 <div class="flex gap-1">
-                                    <button id="open-symbols-btn" class="flex items-center gap-1 text-[10px] font-bold uppercase px-2 py-0.5 bg-slate-800 text-slate-400 border border-slate-700 rounded hover:bg-slate-700 hover:text-white transition-all">
+                                    <button id="open-symbols-btn"
+                                        class="flex items-center gap-1 text-[10px] font-bold uppercase px-2 py-0.5 bg-slate-800 text-slate-400 border border-slate-700 rounded hover:bg-slate-700 hover:text-white transition-all">
                                         <i data-lucide="keyboard" class="w-3 h-3"></i> Symbols
                                     </button>
-                                    <button id="quick-translate-btn" class="flex items-center gap-1 text-[10px] font-bold uppercase px-2 py-0.5 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 rounded hover:bg-indigo-600 hover:text-white transition-all">
+                                    <button id="quick-translate-btn"
+                                        class="flex items-center gap-1 text-[10px] font-bold uppercase px-2 py-0.5 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 rounded hover:bg-indigo-600 hover:text-white transition-all">
                                         <i data-lucide="sparkle" class="w-3 h-3"></i> Translate
                                     </button>
                                 </div>
                             </div>
-                            <textarea id="original-text-input" placeholder="No text detected." class="w-full p-3 bg-slate-900/50 border border-slate-800 rounded-lg text-sm text-slate-400 italic min-h-[4rem] max-h-32 overflow-y-auto focus:outline-none focus:border-indigo-500/50 resize-none"></textarea>
+                            <textarea id="original-text-input" placeholder="No text detected."
+                                class="w-full p-3 bg-slate-900/50 border border-slate-800 rounded-lg text-sm text-slate-400 italic min-h-[4rem] max-h-32 overflow-y-auto focus:outline-none focus:border-indigo-500/50 resize-none"></textarea>
                         </div>
 
                         <!-- Suggested Translations -->
                         <div class="space-y-3">
-                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Suggested Variants</label>
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Suggested
+                                Variants</label>
                             <div id="translation-variants-list" class="space-y-2">
                                 <!-- Variants will be injected here -->
                             </div>
@@ -280,27 +435,35 @@
                         <!-- Final Translation -->
                         <div class="space-y-2 pt-2">
                             <div class="flex justify-between items-center">
-                                <label class="text-xs font-bold text-indigo-400 uppercase tracking-wider">Final Translation</label>
-                                <button id="reset-translation-btn" class="text-xs text-slate-500 hover:text-indigo-400 flex items-center gap-1">
+                                <label class="text-xs font-bold text-indigo-400 uppercase tracking-wider">Final
+                                    Translation</label>
+                                <button id="reset-translation-btn"
+                                    class="text-xs text-slate-500 hover:text-indigo-400 flex items-center gap-1">
                                     <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Reset
                                 </button>
                             </div>
-                            <textarea id="translation-input" placeholder="Type final translation..." class="w-full p-4 bg-slate-800 border-2 rounded-xl text-slate-100 border-indigo-500/30 focus:border-indigo-500 focus:outline-none min-h-[6rem] resize-y"></textarea>
+                            <textarea id="translation-input" placeholder="Type final translation..."
+                                class="w-full p-4 bg-slate-800 border-2 rounded-xl text-slate-100 border-indigo-500/30 focus:border-indigo-500 focus:outline-none min-h-[6rem] resize-y"></textarea>
                         </div>
 
                         <div class="flex items-center gap-4 py-2">
-                            <label class="flex items-center gap-2 cursor-pointer hover:bg-slate-700/50 p-2 rounded-lg transition-colors">
-                                <input id="uppercase-chk" type="checkbox" class="w-4 h-4 rounded text-indigo-600 bg-slate-900 border-slate-700">
+                            <label
+                                class="flex items-center gap-2 cursor-pointer hover:bg-slate-700/50 p-2 rounded-lg transition-colors">
+                                <input id="uppercase-chk" type="checkbox"
+                                    class="w-4 h-4 rounded text-indigo-600 bg-slate-900 border-slate-700">
                                 <span class="text-sm font-medium">All Caps</span>
                             </label>
-                            <label class="flex items-center gap-2 cursor-pointer hover:bg-slate-700/50 p-2 rounded-lg transition-colors">
-                                <input id="keep-original-chk" type="checkbox" class="w-4 h-4 rounded text-indigo-600 bg-slate-900 border-slate-700">
+                            <label
+                                class="flex items-center gap-2 cursor-pointer hover:bg-slate-700/50 p-2 rounded-lg transition-colors">
+                                <input id="keep-original-chk" type="checkbox"
+                                    class="w-4 h-4 rounded text-indigo-600 bg-slate-900 border-slate-700">
                                 <span class="text-sm font-medium">Keep Original</span>
                             </label>
                         </div>
 
                         <div class="flex flex-col gap-2 pt-4 border-t border-slate-800">
-                            <button id="close-editor-btn" class="text-xs text-slate-500 hover:text-slate-300 py-2">Close Editor</button>
+                            <button id="close-editor-btn" class="text-xs text-slate-500 hover:text-slate-300 py-2">Close
+                                Editor</button>
                         </div>
                     </div>
                 </div>
@@ -310,7 +473,8 @@
 
     <!-- Character Palette (Floating Non-Blocking) -->
     <div id="symbols-modal" class="hidden fixed top-24 right-[400px] z-[110] w-72 pointer-events-none drop-shadow-2xl">
-        <div class="relative bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 pointer-events-auto">
+        <div
+            class="relative bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 pointer-events-auto">
             <div class="p-3 border-b border-slate-800 flex justify-between items-center bg-slate-800/30">
                 <div class="flex items-center gap-2">
                     <i data-lucide="keyboard" class="w-4 h-4 text-indigo-400"></i>
@@ -321,24 +485,55 @@
                 </button>
             </div>
             <div class="p-4">
-                <div id="symbols-grid" class="grid grid-cols-6 gap-1.5 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+                <div id="symbols-grid"
+                    class="grid grid-cols-6 gap-1.5 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
                     <!-- Symbols injected here -->
                 </div>
             </div>
             <div class="p-2 bg-slate-950/40 border-t border-slate-800">
-                 <p class="text-[9px] text-center text-slate-500 italic">Inserts at cursor in last focused field.</p>
+                <p class="text-[9px] text-center text-slate-500 italic">Inserts at cursor in last focused field.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Re-scan Confirmation Modal -->
+    <div id="rescan-modal" class="hidden fixed inset-0 z-[150] flex items-center justify-center p-4">
+        <div id="rescan-modal-backdrop" class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"></div>
+        <div
+            class="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div class="p-8 space-y-6">
+                <div class="flex items-center gap-4">
+                    <div class="bg-indigo-600/10 p-3 rounded-2xl">
+                        <i data-lucide="refresh-cw" class="w-6 h-6 text-indigo-400"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-white">AI Re-scan</h3>
+                        <p class="text-sm text-slate-400">Scan this page again using Gemini AI? Existing regions will be
+                            cleared.</p>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                    <button id="rescan-cancel-btn"
+                        class="flex-1 py-3 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold transition-all">Cancel</button>
+                    <button id="rescan-confirm-btn"
+                        class="flex-2 py-3 px-8 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold shadow-lg shadow-indigo-600/20 transition-all active:scale-95">Confirm
+                        Re-scan</button>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Loading Overlay -->
-    <div id="loading-overlay" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex flex-col items-center justify-center">
-         <div class="relative">
+    <div id="loading-overlay"
+        class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex flex-col items-center justify-center">
+        <div class="relative">
             <div class="w-16 h-16 border-4 border-slate-700 border-t-indigo-500 rounded-full animate-spin"></div>
-         </div>
-         <p id="loading-message" class="mt-4 text-lg font-medium text-slate-300">Processing...</p>
+        </div>
+        <p id="loading-message" class="mt-4 text-lg font-medium text-slate-300">Processing...</p>
     </div>
 
-    <script src="script.js"></script>
+    <script type="module" src="script.js"></script>
 </body>
+
 </html>

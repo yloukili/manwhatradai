@@ -20,56 +20,65 @@ def group_lines_into_bubbles(lines):
     if not lines:
         return []
 
+    # tri TOP → BOTTOM, puis LEFT → RIGHT
     lines = sorted(lines, key=lambda l: (l["ymin"], l["xmin"]))
+
     bubbles = []
-    current = None
 
     for line in lines:
         lh = line["ymax"] - line["ymin"]
         lw = line["xmax"] - line["xmin"]
+        line_cx = (line["xmin"] + line["xmax"]) / 2
 
-        if current is None:
-            current = {
-                "lines": [line],
-                "xmin": line["xmin"],
-                "xmax": line["xmax"],
-                "ymin": line["ymin"],
-                "ymax": line["ymax"],
-                "avg_h": lh,
-                "avg_w": lw,
-            }
-            continue
+        best_bubble = None
+        best_score = float("inf")
 
-        vgap = line["ymin"] - current["ymax"]
-        left_diff = abs(line["xmin"] - current["xmin"])
+        for b in bubbles:
+            vgap = line["ymin"] - b["ymax"]
+         
+            bubble_cx = (b["xmin"] + b["xmax"]) / 2
+            center_diff = abs(line_cx - bubble_cx)
 
-        vertical_ok = vgap <= current["avg_h"] * 1.8
-        align_tol = max(current["avg_w"] * 0.12, current["avg_h"] * 0.8)
-        align_ok = left_diff <= align_tol
+            # tolérance verticale adaptative
+            vertical_tol = b["avg_h"] * (1.2 + 0.8 * b["n_lines"])
+            vertical_ok = vgap <= vertical_tol
 
-        if vertical_ok and align_ok:
-            current["lines"].append(line)
-            current["xmin"] = min(current["xmin"], line["xmin"])
-            current["xmax"] = max(current["xmax"], line["xmax"])
-            current["ymax"] = max(current["ymax"], line["ymax"])
+            # tolérance d’alignement par CENTRE
+            center_tol = max(b["avg_w"] * 0.25, b["avg_h"] * 1.0)
+            align_ok = center_diff <= center_tol
 
-            n = len(current["lines"])
-            current["avg_h"] = (current["avg_h"] * (n - 1) + lh) / n
-            current["avg_w"] = (current["avg_w"] * (n - 1) + lw) / n
+            if vertical_ok and align_ok:
+                score = vgap + center_diff
+                if score < best_score:
+                    best_score = score
+                    best_bubble = b
+
+        if best_bubble:
+            b = best_bubble
+            b["lines"].append(line)
+            b["n_lines"] += 1
+
+            b["xmin"] = min(b["xmin"], line["xmin"])
+            b["xmax"] = max(b["xmax"], line["xmax"])
+            b["ymax"] = max(b["ymax"], line["ymax"])
+
+            n = b["n_lines"]
+            b["avg_h"] = (b["avg_h"] * (n - 1) + lh) / n
+            b["avg_w"] = (b["avg_w"] * (n - 1) + lw) / n
         else:
-            bubbles.append(current)
-            current = {
+            bubbles.append({
                 "lines": [line],
+                "n_lines": 1,
                 "xmin": line["xmin"],
                 "xmax": line["xmax"],
                 "ymin": line["ymin"],
                 "ymax": line["ymax"],
                 "avg_h": lh,
                 "avg_w": lw,
-            }
+            })
 
-    bubbles.append(current)
     return bubbles
+
 
 # -----------------------------------------------------
 # MAIN PARSER

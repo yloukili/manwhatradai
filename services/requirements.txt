@@ -1,0 +1,18 @@
+openpyxl==3.1.5
+-e git+https://github.com/yloukili/PaddleOCR.git@f28cd609df9e862d865798b6f16b2cbe401563f3#egg=paddleocr
+paddleocr==3.2.1.dev4+g242460de2.d20260121
+paddlepaddle==3.2.2
+pdf2docx==0.5.8
+pip-chill==1.0.3
+premailer==3.10.0
+pyclipper==1.3.0.post6
+pypdfium2==5.1.0
+pysocks==1.7.1
+python-bidi==0.6.7
+rapidfuzz==3.14.3
+ruamel-yaml-clib==0.2.15
+sentencepiece==0.2.1
+torchvision==0.24.1
+transformers==5.0.0
+underthesea==8.3.0
+visualdl==2.5.3

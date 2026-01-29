@@ -37,9 +37,9 @@ FREQUENCY_ORDER = {
           "ề","ế","ệ","ể","ễ"],
     "i": ["i","ì","í","ị","ỉ","ĩ"],
     "o": ["o","ò","ó","ọ","ỏ","õ","ô","ơ",
-          "ồ","ố","ộ","ổ","ỗ","ờ","ớ","ợ","ở","ỡ"],
+          "ồ","ố","ộ","ổ","ỗ","ờ","ớ","ợ","ở","ỡ","ō"],
     "u": ["u","ù","ú","ụ","ủ","ũ","ư",
-          "ừ","ứ","ự","ử","ữ"],
+          "ừ","ứ","ự","ử","ữ", "ū"],
     "y": ["y","ỳ","ý","ỵ","ỷ","ỹ"],
     "d": ["d","đ"],
 }
@@ -73,7 +73,7 @@ def split_candidates(token):
 
     # voyelle → consonne
     for i in range(n - 1):
-        if token[i].lower() in "aeiouyàáảãạāǎăằắẳẵặâầấẩẫậèéẻẽẹēêềếểễệěìíỉĩịīòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựüỳýỷỹỵ" and token[i+1].lower() not in "aeiouy":
+        if token[i].lower() in "aeiouyàáảãạāǎăằắẳẵặâầấẩẫậèéẻẽẹēêềếểễệěìíỉĩịīòóỏõọôồốổỗộơờớởỡợōùúủũụưừứửữựüūỳýỷỹỵ" and token[i+1].lower() not in "aeiouy":
             split_positions.add(i + 1)
 
 
@@ -102,7 +102,7 @@ def split_candidates(token):
 
         # bonus voyelle → consonne
         score += len(
-            re.findall(r"[aeiouyàáảãạāǎăằắẳẵặâầấẩẫậèéẻẽẹēêềếểễệěìíỉĩịīòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựüỳýỷỹỵ] [^aeiouy]", cand, flags=re.IGNORECASE)
+            re.findall(r"[aeiouyàáảãạāǎăằắẳẵặâầấẩẫậèéẻẽẹēêềếểễệěìíỉĩịīòóỏõọôồốổỗộơờớởỡợōùúủũụưừứửữựüūỳýỷỹỵ] [^aeiouy]", cand, flags=re.IGNORECASE)
         ) * 1.0
 
         # bonus token long
@@ -123,7 +123,7 @@ def is_consonant_only(word):
     
     return (
         len(word) > 1 and
-        not re.search(r"[aeiouyàáảãạāǎăằắẳẵặâầấẩẫậèéẻẽẹēêềếểễệěìíỉĩịīòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựüỳýỷỹỵ]", word, flags=re.IGNORECASE)
+        not re.search(r"[aeiouyàáảãạāǎăằắẳẵặâầấẩẫậèéẻẽẹēêềếểễệěìíỉĩịīòóỏõọôồốổỗộơờớởỡợōùúủũụưừứửữựüūỳýỷỹỵ]", word, flags=re.IGNORECASE)
     )
 def is_real_one_letter_word(word: str) -> bool:
     if not word:

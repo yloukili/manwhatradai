@@ -20,6 +20,8 @@ const OLLAMA_URL = process.env.OLLAMA_URL || "http://localhost:11434/api/generat
 const OLLAMA_MODEL = process.env.LOCAL_MODEL || "mistral";
 
 const OCR_URL = process.env.OCR_URL || "http://localhost:5005/ocr";
+const TRANSLATION_URL = process.env.TRANSLATION_URL || "http://localhost:5005/translate";
+const PROCESS_URL = process.env.PROCESS_URL || "http://localhost:5005/process";
 
 // ===============================
 // QUEUE SYSTEM
@@ -84,7 +86,7 @@ function attemptJSONRepair(str) {
     fixed = fixed.substring(first, last + 1);
     try {
       return JSON.parse(fixed);
-    } catch (_) {}
+    } catch (_) { }
   }
   throw new Error("Could not repair JSON");
 }
@@ -133,10 +135,10 @@ async function mistralTranslate(jobId, regions) {
   const CHUNK_SIZE = 6;
   const chunks = splitIntoChunks(regions, CHUNK_SIZE);
   const finalOutput = [];
-  console.log(chunks);
+  console.log(JSON.stringify(chunks));
   for (let ci = 0; ci < chunks.length; ci++) {
     const chunk = chunks[ci];
-
+    console.log(JSON.stringify(chunk));
     const itemsText = chunk
       .map((r, idx) => {
         return `
@@ -163,6 +165,7 @@ Strict rules:
 - NO explanations.
 - NO extra text.
 - NO comments.
+- The output "box_2d" MUST ALWAYS be EXACTLY the same as the input "BBOX"
 - translation language is always english.
 - Translation fields must only contain the translation, nothing more. 
 - Each translation must come in 3 variants: 
@@ -173,6 +176,7 @@ Strict rules:
 ITEMS:
 ${itemsText}
 `;
+    console.log({ "itemsText": itemsText });
 
     const body = {
       model: OLLAMA_MODEL,
@@ -212,43 +216,32 @@ ${itemsText}
 // ===============================
 // ANALYZE JOB
 // ===============================
-async function processAnalyzeJob({ jobId, debug }) {
+async function processAnalyzeJob({ jobId, lang, debug }) {
   const jobDir = path.join(JOBS_DIR, jobId);
   const base64 = fs.readFileSync(path.join(jobDir, "input.base64"), "utf8");
-  const imgBuffer = Buffer.from(base64, "base64");
 
-  // ---------- 1) SEND TO OCR SERVICE ----------
-  const response = await fetch(OCR_URL, {
+  // ---------- UNIFIED PIPELINE ----------
+  const response = await fetch(PROCESS_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ image: base64, debug })
+    body: JSON.stringify({ image: base64, lang, debug })
   });
 
   if (!response.ok) {
-    throw new Error("OCR service returned " + response.status);
+    throw new Error("Process service returned " + response.status);
   }
 
-  const ocrResult = await response.json();
-  if (!ocrResult.ok) {
-    throw new Error("OCR error: " + ocrResult.error);
+  const result = await response.json();
+  if (!result.ok) {
+    throw new Error("Process error: " + result.error);
   }
 
-  const regions = ocrResult.regions || [];
-
-  // ---------- DEBUG ----------
+  // Debug output if requested
   if (debug) {
-    fs.writeFileSync(path.join(jobDir, "ocr.debug.json"), JSON.stringify(ocrResult, null, 2));
+    fs.writeFileSync(path.join(jobDir, "process.full.json"), JSON.stringify(result, null, 2));
   }
 
-  // ---------- 2) TRANSLATE VIA MISTRAL ----------
-  const mistralResult = await mistralTranslate(jobId, regions);
-
-  // ---------- DEBUG ----------
-  if (debug) {
-    fs.writeFileSync(path.join(jobDir, "mistral.final.json"), JSON.stringify(mistralResult, null, 2));
-  }
-
-  return mistralResult;
+  return result;
 }
 
 // ===============================
@@ -259,7 +252,7 @@ app.use(express.static(path.join(__dirname, "public")));
 
 app.post("/api/analyze", async (req, res) => {
   try {
-    const { image, debug } = req.body;
+    const { image, lang, debug } = req.body;
     if (!image) return res.status(400).json({ ok: false, error: "Missing image" });
 
     const jobId = uuidv4();
@@ -269,7 +262,7 @@ app.post("/api/analyze", async (req, res) => {
     const cleanBase64 = image.replace(/^data:.*;base64,/, "");
     fs.writeFileSync(path.join(jobDir, "input.base64"), cleanBase64);
 
-    const result = await enqueue({ jobId, debug });
+    const result = await enqueue({ jobId, lang, debug });
     return res.json(result);
 
   } catch (err) {
@@ -334,57 +327,28 @@ app.post("/api/render", async (req, res) => {
 
 // New Endpoint for Text-Only Translation
 app.post('/api/translate', async (req, res) => {
-    try {
-        const { text, type } = req.body;
+  try {
+    const { text, type, sourceLanguage } = req.body;
 
-        if (!text) return res.status(400).json({ error: "No text provided" });
-        let prompt = `
-        You are a professional translator, you handle OCR texts extracted from comics. Translate the provided text into natural, immersive English. 
-        The expected return format is a JSON object with the form:
-        {
-          "translations": ["...", "...", "..."],
-          "type": "dialogue" | "narration" | "sfx"
-        }
-          Strict rules:
-          - RETURN ONLY a JSON OBJECT, .
-          - NO explanations.
-          - NO extra text.
-          - NO comments.
-          - translation language is always english.
-          - Translation fields must only contain the translation, nothing more. 
-          - Each translation must come in 3 variants: 
-            . Literal a strict traduction of the orifinal text
-            . Semantic variant of literal
-            . stylistic variant of literal 
 
-        Translate this: "${text}"`;
-
-      const body = {
-        model: OLLAMA_MODEL,
-        prompt,
-        stream: false
-      };
-
-      console.log(`🔵 Calling Mistral`);
-
-      const response = await fetch(OLLAMA_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-      });
-      if (!response.ok) {
-        throw new Error("Ollama returned " + response.status);
-      }
-
-      const json = await response.json();
-      let txt = json.response;
-      console.log(txt);
-      res.json(txt);
-
-    } catch (error) {
-        console.error("Translation Error:", error);
-        res.status(500).json({ error: "Translation failed" });
+    // ---------- 1) SEND TO OCR SERVICE ----------
+    const response = await fetch(TRANSLATION_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: text, lang: sourceLanguage })
+    });
+    if (!response.ok) {
+      throw new Error("Translation service returned " + response.status);
     }
+
+    const json = await response.json();
+    console.log(json);
+    res.json(json);
+
+  } catch (error) {
+    console.error("Translation Error:", error);
+    res.status(500).json({ error: "Translation failed" });
+  }
 });
 
 

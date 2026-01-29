@@ -75,12 +75,27 @@
 
 /* Thumbnails */
 .thumbnail-btn {
-    cursor: grab;
-    transition: transform 0.2s, opacity 0.2s;
+    cursor: pointer;
+    transition: transform 0.2s, opacity 0.2s, border-color 0.2s;
 }
-.thumbnail-btn:active { cursor: grabbing; }
-.thumbnail-btn.dragging { opacity: 0.4; transform: scale(0.9); border-style: dashed; }
-.thumbnail-btn.drag-over { transform: scale(1.05); border-color: #818cf8; box-shadow: 0 0 15px rgba(99, 102, 241, 0.5); }
+.thumbnail-btn.dragging { 
+    opacity: 0.2; 
+    transform: scale(0.9); 
+    border-style: dashed; 
+}
+.thumbnail-btn.drag-over { 
+    transform: translateY(10px);
+    border-color: #818cf8; 
+}
+
+.remove-page-btn {
+    opacity: 0;
+    transition: opacity 0.2s, background-color 0.2s;
+}
+
+.thumbnail-btn:hover .remove-page-btn {
+    opacity: 1;
+}
 
 /* Animation */
 @keyframes fadeIn {

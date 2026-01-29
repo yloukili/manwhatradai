@@ -115,7 +115,6 @@ def debug_dump_ocr_image(
     max_y = H
 
     for l in ocr_lines:
-        print(l)
         if "xmin" in l:
             min_y = min(min_y, int(l["ymin"]))
             min_x = min(min_x, int(l["xmin"]))
