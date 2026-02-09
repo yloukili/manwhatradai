@@ -12,18 +12,18 @@ def _ensure_3_channels(img: np.ndarray) -> np.ndarray:
     return img
 
 
-def upscale_if_needed(img: np.ndarray) -> np.ndarray:
+def upscale_if_needed(img: np.ndarray) -> tuple[np.ndarray, float]:
     h, w = img.shape[:2]
     if min(h, w) >= 1200:
-        return img
-
+        return img, 1.0
+    print("resized")
     return cv2.resize(
         img,
         None,
         fx=2.0,
         fy=2.0,
         interpolation=cv2.INTER_CUBIC
-    )
+    ), 2.0
 
 
 def enhance_for_vietnamese(img: np.ndarray) -> np.ndarray:
@@ -53,7 +53,7 @@ def enhance_for_vietnamese(img: np.ndarray) -> np.ndarray:
     
 
 
-def preprocess_image(img: np.ndarray, lang: str) -> np.ndarray:
+def preprocess_image(img: np.ndarray, lang: str) -> tuple[np.ndarray, float]:
     """
     FINAL GUARANTEE:
     - uint8
@@ -63,14 +63,16 @@ def preprocess_image(img: np.ndarray, lang: str) -> np.ndarray:
     # Safety
     if img.dtype != np.uint8:
         img = img.astype(np.uint8)
+    
 
     img = _ensure_3_channels(img)
-    img = upscale_if_needed(img)
+    img, scale_factor = upscale_if_needed(img)
 
     if lang == "vietnamese":
         img = enhance_for_vietnamese(img)
 
     # FINAL SAFETY NET
     img = _ensure_3_channels(img)
+    print("PREPROCESSING DONE")
 
-    return img
+    return img, scale_factor

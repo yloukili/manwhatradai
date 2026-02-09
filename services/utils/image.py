@@ -40,14 +40,18 @@ def add_padding(image, top_ratio=0.1, bottom_ratio=0.1, color=(0, 0, 0)):
     return padded_image, pad_top, pad_bottom
 
 
-def resize_bounding(ocr_list, pad_top=0, pad_bottom=0):
+def resize_bounding(ocr_list, pad_top=0, pad_bottom=0, scale_factor=1.0):
     """
-    Corrige les coordonnées des bounding boxes après padding vertical.
+    Corrige les coordonnées des bounding boxes après padding vertical ET scaling.
+    Multi-étape :
+    1. Retrait du padding (y - pad_top)
+    2. Division par le scale_factor (val / scale)
 
     Args:
         ocr_list (list of dict): [{'box_2d':[y1,x1,y2,x2], 'original':..., ...}, ...]
         pad_top (int): hauteur du padding ajouté en haut
-        pad_bottom (int): hauteur du padding ajouté en bas (inutile ici, pour info)
+        pad_bottom (int): hauteur du padding ajouté en bas
+        scale_factor (float): facteur d'upscale utilisé (ex: 2.0)
     
     Returns:
         new_list (list of dict): liste avec box_2d corrigées
@@ -58,14 +62,32 @@ def resize_bounding(ocr_list, pad_top=0, pad_bottom=0):
         box = item.get("box_2d", [0, 0, 0, 0])
         if len(box) == 4:
             y1, x1, y2, x2 = box
-            height = y2 - y1
-            y1 -= pad_top
-            # éviter les coordonnées négatives
-            y1 = max(y1, 0)
-            y2 = y1 + height
-            new_box = [y1, x1, y2, x2]
+            height = y2 - y1 
+            width = x2 - x1 
+
+            # 1. Remove padding
+            y1_nopad = y1 - pad_top
+            y2_nopad = y2 - pad_top
+            x1_nopad = x1
+            x2_nopad = x2
+
+            # 2. Rescale
+            y1_final = y1_nopad / scale_factor
+            y2_final = y2_nopad / scale_factor
+            x1_final = x1_nopad / scale_factor
+            x2_final = x2_nopad / scale_factor
+
+            # Safety clamp at 0
+            y1_final = max(0, y1_final)
+            x1_final = max(0, x1_final)
+            y2_final = y1_final + height
+            x2_final = x1_final + width
+            # y2/x2 should also logically be >= y1/x1, but usually clamp 0 is enough for start 
+            # Round for integer pixels
+            new_box = [int(round(y1_final)), int(round(x1_final)), int(round(y2_final)), int(round(x2_final))]
         else:
             new_box = box
+            
         new_item = item.copy()
         new_item["box_2d"] = new_box
         new_list.append(new_item)

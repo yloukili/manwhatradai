@@ -236,6 +236,33 @@ async function processAnalyzeJob({ jobId, lang, debug }) {
     throw new Error("Process error: " + result.error);
   }
 
+  // --- NORMALIZE COORDINATES to 1000x1000 (Frontend Requirement) ---
+  try {
+    const imgBuffer = Buffer.from(base64, "base64");
+    const metadata = await sharp(imgBuffer).metadata();
+    const w = metadata.width;
+    const h = metadata.height;
+
+    if (w && h && result.regions) {
+      result.regions.forEach(r => {
+        if (r.box_2d && r.box_2d.length === 4) {
+          console.log("big box");
+          let [y1, x1, y2, x2] = r.box_2d;
+          // box_2d is [ymin, xmin, ymax, xmax] in pixels
+          let ny1 = (y1 / h) * 1000;
+          let nx1 = (x1 / w) * 1000;
+          let ny2 = (y2 / h) * 1000;
+          let nx2 = (x2 / w) * 1000;
+          r.box_2d = [ny1, nx1, ny2, nx2];
+          console.log(r.box_2d);
+        }
+
+      });
+    }
+  } catch (err) {
+    console.warn("Normalization failed, passing original coords:", err);
+  }
+
   // Debug output if requested
   if (debug) {
     fs.writeFileSync(path.join(jobDir, "process.full.json"), JSON.stringify(result, null, 2));

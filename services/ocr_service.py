@@ -17,7 +17,7 @@ def run_ocr_pipeline(image_b64, lang=None):
         if img is None:
             raise ValueError("Invalid image")
 
-        img = preprocess_image(img, lang)
+        img, scale_factor = preprocess_image(img, lang)
         padded_img, pad_top, pad_bottom = image.add_padding(img)
 
         raw_list, conf_threshold = paddle_runner.run_paddle_ocr(padded_img, lang)
@@ -39,7 +39,7 @@ def run_ocr_pipeline(image_b64, lang=None):
             results = postprocess_ocr_results(regions)
         else:
             results = regions
-        adjusted_results = image.resize_bounding(results, pad_top)
+        adjusted_results = image.resize_bounding(results, pad_top, scale_factor=scale_factor)
         print(adjusted_results)
         return adjusted_results, lang
     except Exception as e:

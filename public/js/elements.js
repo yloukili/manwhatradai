@@ -57,6 +57,13 @@ export const elements = {
     uppercaseChk: document.getElementById('uppercase-chk'),
     exportBtn: document.getElementById('export-btn'),
 
+    // Zonal Elements
+    selectZoneBtn: document.getElementById('select-zone-btn'),
+    zonalSelection: document.getElementById('zonal-selection'),
+    zoneConfirmMenu: document.getElementById('zone-confirm-menu'),
+    zoneTranslateBtn: document.getElementById('zone-translate-btn'),
+    zoneClearBtn: document.getElementById('zone-clear-btn'),
+
     // Fusion Editor
     fusionEditor: document.getElementById('fusion-editor'),
     fuseOrientVert: document.getElementById('fuse-orient-vert'),

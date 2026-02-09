@@ -5,11 +5,50 @@ import { translateText } from './js/api.js';
 import { syncWorkAreaSize, renderOverlays, handleMouseDown } from './js/canvas.js';
 import { renderEditorPanel, refreshFusedComposite, loadPage, updateRegionProp, renderSymbols } from './js/editor.js';
 import { renderThumbnails, handleExport, handleSaveProject, handleLoadProjectFile } from './js/project.js';
-import { handleFiles, processPage } from './js/processing.js';
+import { handleFiles, processPage, processZone } from './js/processing.js';
 import { handleEyeDrop } from './js/utils.js';
 
 // --- Initialization ---
 if (window.lucide) window.lucide.createIcons();
+
+// --- Draggable Utility ---
+const makeDraggable = (element, handle) => {
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    handle.onmousedown = dragMouseDown;
+
+    function dragMouseDown(e) {
+        e.preventDefault();
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        document.onmouseup = closeDragElement;
+        document.onmousemove = elementDrag;
+    }
+
+    function elementDrag(e) {
+        e.preventDefault();
+        pos1 = pos3 - e.clientX;
+        pos2 = pos4 - e.clientY;
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        element.style.top = (element.offsetTop - pos2) + "px";
+        element.style.left = (element.offsetLeft - pos1) + "px";
+        // Override the default right/bottom positioning once dragged
+        element.style.right = 'auto';
+        element.style.bottom = 'auto';
+    }
+
+    function closeDragElement() {
+        document.onmouseup = null;
+        document.onmousemove = null;
+    }
+};
+
+// Initialize Draggability
+const symbolHeader = elements.symbolsModal.querySelector('.p-3.border-b');
+if (symbolHeader) {
+    symbolHeader.classList.add('symbols-header');
+    makeDraggable(elements.symbolsModal, symbolHeader);
+}
 
 // --- Event Listeners Centralization ---
 
@@ -184,6 +223,35 @@ elements.rescanConfirmBtn.addEventListener('click', () => {
     }
 });
 
+// Zonal Actions
+elements.selectZoneBtn.addEventListener('click', () => {
+    state.isZonalMode = !state.isZonalMode;
+    elements.selectZoneBtn.classList.toggle('bg-slate-700', state.isZonalMode);
+    elements.selectZoneBtn.classList.toggle('active', state.isZonalMode);
+    if (!state.isZonalMode) {
+        elements.zonalSelection.classList.add('hidden');
+        elements.zoneConfirmMenu.classList.add('hidden');
+    }
+});
+
+elements.zoneClearBtn.addEventListener('click', () => {
+    elements.zonalSelection.classList.add('hidden');
+    elements.zoneConfirmMenu.classList.add('hidden');
+    state.currentZone = null;
+});
+
+elements.zoneTranslateBtn.addEventListener('click', () => {
+    const page = getCurrentPage();
+    if (page && state.currentZone) {
+        const lang = elements.languageSelect.value;
+        processZone(page, state.currentZone, lang === 'auto' ? null : lang);
+        elements.zoneConfirmMenu.classList.add('hidden');
+        // Disable mode after starting
+        state.isZonalMode = false;
+        elements.selectZoneBtn.classList.remove('bg-slate-700', 'active');
+    }
+});
+
 // Fusion Actions
 elements.fuseBtn.addEventListener('click', async () => {
     const idx = state.pages.findIndex(p => p.id === state.currentPageId);
@@ -239,11 +307,30 @@ elements.swapFusionBtn.addEventListener('click', async () => {
 // --- Canvas Interactions ---
 elements.overlaysLayer.addEventListener('mousedown', handleMouseDown);
 window.addEventListener('mousemove', (e) => {
-    if (!state.interactionMode || !state.interactionTargetId) return;
+    if (!state.interactionMode) return;
+    const rect = elements.workArea.getBoundingClientRect();
+    const curX = ((e.clientX - rect.left) / rect.width) * 1000;
+    const curY = ((e.clientY - rect.top) / rect.height) * 1000;
+
+    if (state.interactionMode === 'zone') {
+        state.currentZone.xmax = curX;
+        state.currentZone.ymax = curY;
+        const xmin = Math.min(state.currentZone.xmin, state.currentZone.xmax);
+        const xmax = Math.max(state.currentZone.xmin, state.currentZone.xmax);
+        const ymin = Math.min(state.currentZone.ymin, state.currentZone.ymax);
+        const ymax = Math.max(state.currentZone.ymin, state.currentZone.ymax);
+
+        elements.zonalSelection.style.top = `${ymin / 10}%`;
+        elements.zonalSelection.style.left = `${xmin / 10}%`;
+        elements.zonalSelection.style.width = `${(xmax - xmin) / 10}%`;
+        elements.zonalSelection.style.height = `${(ymax - ymin) / 10}%`;
+        return;
+    }
+
+    if (!state.interactionTargetId) return;
     const page = getCurrentPage();
     const region = page.regions.find(r => r.id === state.interactionTargetId);
     if (!region) return;
-    const rect = elements.workArea.getBoundingClientRect();
     const dx = ((e.clientX - state.startX) / rect.width) * 1000, dy = ((e.clientY - state.startY) / rect.height) * 1000;
 
     if (state.interactionMode === 'move') {
@@ -266,15 +353,38 @@ window.addEventListener('mousemove', (e) => {
     }
 });
 
-window.addEventListener('mouseup', () => {
+window.addEventListener('mouseup', (e) => {
     if (!state.interactionMode) return;
     const page = getCurrentPage();
-    const region = page.regions.find(r => r.id === state.interactionTargetId);
-    if (region && (state.interactionMode === 'draw' || state.interactionMode === 'resize')) {
-        const xmin = Math.min(region.bbox.xmin, region.bbox.xmax), xmax = Math.max(region.bbox.xmin, region.bbox.xmax);
-        const ymin = Math.min(region.bbox.ymin, region.bbox.ymax), ymax = Math.max(region.bbox.ymin, region.bbox.ymax);
-        region.bbox = { xmin, ymin, xmax, ymax };
+
+    if (state.interactionMode === 'zone') {
+        // Fix coordinates if drawn backwards
+        const xmin = Math.min(state.currentZone.xmin, state.currentZone.xmax);
+        const xmax = Math.max(state.currentZone.xmin, state.currentZone.xmax);
+        const ymin = Math.min(state.currentZone.ymin, state.currentZone.ymax);
+        const ymax = Math.max(state.currentZone.ymin, state.currentZone.ymax);
+        state.currentZone = { xmin, ymin, xmax, ymax };
+
+        // Only show confirm if zone is big enough
+        if (xmax - xmin > 5 && ymax - ymin > 5) {
+            elements.zoneConfirmMenu.classList.remove('hidden');
+            const rect = elements.workArea.getBoundingClientRect();
+            // Position near cursor
+            elements.zoneConfirmMenu.style.top = `${e.clientY - rect.top}px`;
+            elements.zoneConfirmMenu.style.left = `${e.clientX - rect.left}px`;
+        } else {
+            elements.zonalSelection.classList.add('hidden');
+            state.currentZone = null;
+        }
+    } else {
+        const region = page.regions.find(r => r.id === state.interactionTargetId);
+        if (region && (state.interactionMode === 'draw' || state.interactionMode === 'resize')) {
+            const xmin = Math.min(region.bbox.xmin, region.bbox.xmax), xmax = Math.max(region.bbox.xmin, region.bbox.xmax);
+            const ymin = Math.min(region.bbox.ymin, region.bbox.ymax), ymax = Math.max(region.bbox.ymin, region.bbox.ymax);
+            region.bbox = { xmin, ymin, xmax, ymax };
+        }
     }
+
     state.interactionMode = null; state.interactionTargetId = null;
     renderOverlays(getCurrentPage());
     renderEditorPanel();

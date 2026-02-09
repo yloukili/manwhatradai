@@ -145,6 +145,25 @@
                     <img id="main-image" src="" alt="Canvas"
                         class="w-full h-full block pointer-events-none select-none" />
                     <div id="overlays-layer" class="absolute inset-0 cursor-crosshair"></div>
+
+                    <!-- Zonal Selection Box -->
+                    <div id="zonal-selection"
+                        class="hidden absolute border-2 border-cyan-400 border-dashed bg-cyan-400/10 z-50 pointer-events-none">
+                    </div>
+
+                    <!-- Zone Confirmation Menu -->
+                    <div id="zone-confirm-menu"
+                        class="hidden absolute z-[60] bg-slate-900 border border-slate-700 rounded-lg shadow-2xl p-1 flex gap-1 animate-in fade-in zoom-in-95 duration-200">
+                        <button id="zone-translate-btn"
+                            class="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold uppercase rounded-md transition-all">
+                            <i data-lucide="languages" class="w-3 h-3"></i> Translate Area
+                        </button>
+                        <button id="zone-clear-btn"
+                            class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold uppercase rounded-md transition-all">
+                            Clear
+                        </button>
+                    </div>
+
                     <div id="workspace-loading"
                         class="hidden absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] flex flex-col items-center justify-center z-40 pointer-events-none">
                         <div
@@ -179,6 +198,14 @@
                                 <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-indigo-400"></i>
                                 AI Re-scan
                             </button>
+                            <button id="select-zone-btn"
+                                class="flex items-center justify-center gap-2 py-2 px-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs font-medium text-slate-300 transition-all group">
+                                <i data-lucide="scan"
+                                    class="w-3.5 h-3.5 text-cyan-400 group-[.active]:animate-pulse"></i>
+                                Select Zone
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-1 gap-2">
                             <button id="fuse-btn"
                                 class="flex items-center justify-center gap-2 py-2 px-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs font-medium text-slate-300 transition-all">
                                 <i data-lucide="combine" class="w-3.5 h-3.5 text-indigo-400"></i>
